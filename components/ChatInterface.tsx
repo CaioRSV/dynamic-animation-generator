@@ -5,7 +5,7 @@ import { Send, Sparkles, Loader2, Bot, User } from "lucide-react";
 
 interface ChatInterfaceProps {
   isLoading: boolean;
-  onSubmit: (message: string) => void;
+  onSubmit: (message: string) => Promise<string>;
 }
 
 interface Message {
@@ -22,16 +22,20 @@ export default function ChatInterface({ isLoading, onSubmit }: ChatInterfaceProp
     }
   ]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim() || isLoading) return;
 
+    const userMessage = inputValue;
     // Add user message
-    setMessages((prev) => [...prev, { role: "user", content: inputValue }]);
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setInputValue("");
     
     // Trigger submit
-    onSubmit(inputValue);
-    setInputValue("");
+    const response = await onSubmit(userMessage);
+    if (response) {
+      setMessages((prev) => [...prev, { role: "ai", content: response }]);
+    }
   };
 
   return (
