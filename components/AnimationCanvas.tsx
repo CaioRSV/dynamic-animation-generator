@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Play, RotateCcw, Pause, Activity, Repeat, Settings2, SlidersHorizontal, Square } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, Variants } from "framer-motion";
+import { Play, RotateCcw, Pause, Activity, Repeat, Settings2, SlidersHorizontal, Square, Sparkles, Infinity } from "lucide-react";
 
 // --- Custom SVGs for Items ---
 const GunSvg = () => (
@@ -44,21 +44,37 @@ const CoffeeSvg = () => (
   </svg>
 );
 
+// --- Speech Bubble Component ---
+const SpeechBubble = ({ text, isBandit }: { text: string, isBandit: boolean }) => {
+  if (!text) return null;
+  return (
+    <div className={`absolute -top-14 ${isBandit ? 'left-10' : 'right-10'} z-[100] bg-white text-zinc-900 px-3 py-1.5 rounded-2xl shadow-xl border border-zinc-200/60 text-xs font-bold whitespace-nowrap`}>
+      {text}
+      <div className={`absolute bottom-0 ${isBandit ? 'left-3' : 'right-3'} translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-white`}></div>
+    </div>
+  );
+};
+
 // --- Face Component ---
 const Face = ({ look, mood, isBandit }: { look: string, mood: string, isBandit: boolean }) => {
   const pupilSize = mood === 'shocked' ? 'w-1.5 h-1.5' : (isBandit ? 'w-3.5 h-3.5' : 'w-3 h-3');
   const leftPupilOffset = look === 'left' ? '-translate-x-1.5' : look === 'right' ? 'translate-x-1.5' : '';
   const rightPupilOffset = look === 'left' ? '-translate-x-1.5' : look === 'right' ? 'translate-x-1.5' : '';
+  const eyebrowColor = isBandit ? 'bg-black border border-zinc-700/50' : 'bg-amber-950';
 
   return (
     <div className={`relative flex flex-col items-center ${isBandit ? 'gap-1.5' : 'gap-1'}`}>
-      {/* Eyebrows for Angry */}
-      {mood === 'angry' && (
-        <div className={`absolute -top-1.5 w-[115%] flex justify-between z-20 px-0.5`}>
-          <div className="w-3.5 h-1.5 bg-zinc-800 rounded-full rotate-[25deg] translate-y-1"></div>
-          <div className="w-3.5 h-1.5 bg-zinc-800 rounded-full -rotate-[25deg] translate-y-1"></div>
-        </div>
-      )}
+      {/* Eyebrows (Dynamic based on mood) */}
+      <div className={`absolute -top-2 w-[130%] flex justify-between z-30 px-0.5 pointer-events-none`}>
+        <div className={`w-5 h-2.5 ${eyebrowColor} rounded-full transition-all duration-300 shadow-sm ${mood === 'angry' ? 'rotate-[25deg] translate-y-2' :
+          mood === 'shocked' ? '-rotate-[20deg] -translate-y-1' :
+            mood === 'happy' ? '-rotate-[10deg] translate-y-0.5' : 'rotate-0 translate-y-0.5'
+          }`}></div>
+        <div className={`w-5 h-2.5 ${eyebrowColor} rounded-full transition-all duration-300 shadow-sm ${mood === 'angry' ? '-rotate-[25deg] translate-y-2' :
+          mood === 'shocked' ? 'rotate-[20deg] -translate-y-1' :
+            mood === 'happy' ? 'rotate-[10deg] translate-y-0.5' : 'rotate-0 translate-y-0.5'
+          }`}></div>
+      </div>
 
       {/* Eyes */}
       <div className={`flex items-center justify-center ${isBandit ? 'gap-1.5' : 'gap-1'}`}>
@@ -87,42 +103,63 @@ const Face = ({ look, mood, isBandit }: { look: string, mood: string, isBandit: 
 
 export interface StepConfig {
   dur: number;
-  bX: number; bScale: number; bLook: string; bMood: string; bItem: string;
-  rX: number; rScale: number; rLook: string; rMood: string; rItem: string;
+  bX: number; bLook: string; bMood: string; bItem: string; bSpeech: string;
+  rX: number; rLook: string; rMood: string; rItem: string; rSpeech: string;
 }
 
 export interface AnimationConfigData {
   step1: StepConfig;
   step2: StepConfig;
   step3: StepConfig;
-  idle: StepConfig;
 }
 
 interface AnimationCanvasProps {
   isLoading?: boolean;
   config: AnimationConfigData;
   setConfig: React.Dispatch<React.SetStateAction<AnimationConfigData>>;
+  onGenerateNewScene?: () => void;
 }
 
-export default function AnimationCanvas({ isLoading, config, setConfig }: AnimationCanvasProps) {
+export default function AnimationCanvas({
+  isLoading,
+  config,
+  setConfig,
+  onGenerateNewScene
+}: AnimationCanvasProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const isPlayingRef = useRef(false);
 
-  const [animationState, setAnimationState] = useState<"idle" | "step1" | "step2" | "step3">("idle");
+  const [animationState, setAnimationState] = useState<"step1" | "step2" | "step3">("step1");
   const [progress, setProgress] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
 
-  const [isLooping, setIsLooping] = useState(false);
-  const isLoopingRef = useRef(false);
+  const [isAutoGenerate, setIsAutoGenerate] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(15000);
 
-  const toggleLoop = () => {
-    const next = !isLooping;
-    setIsLooping(next);
-    isLoopingRef.current = next;
-    if (next && !isPlayingRef.current) {
-      runTimeline();
+  useEffect(() => {
+    if (!isAutoGenerate || isLoading) {
+      setTimeRemaining(15000);
+      return;
     }
-  };
+
+    const interval = setInterval(() => {
+      setTimeRemaining((prev) => (prev <= 50 ? 0 : prev - 50));
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [isAutoGenerate, isLoading]);
+
+  useEffect(() => {
+    if (timeRemaining === 0 && isAutoGenerate && !isLoading) {
+      if (onGenerateNewScene) {
+        onGenerateNewScene();
+      }
+      setTimeRemaining(15000);
+    }
+  }, [timeRemaining, isAutoGenerate, isLoading, onGenerateNewScene]);
+
+  const configRef = useRef(config);
+  useEffect(() => { configRef.current = config; }, [config]);
 
   const simulateProgress = async (start: number, end: number, duration: number) => {
     return new Promise<void>((resolve, reject) => {
@@ -149,21 +186,18 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
       setProgress(0);
       try {
         setAnimationState("step1");
-        await simulateProgress(0, 25, config.step1.dur);
+        await simulateProgress(0, 33, configRef.current.step1.dur);
 
         setAnimationState("step2");
-        await simulateProgress(25, 60, config.step2.dur);
+        await simulateProgress(33, 66, configRef.current.step2.dur);
 
         setAnimationState("step3");
-        await simulateProgress(60, 85, config.step3.dur);
-
-        setAnimationState("idle");
-        await simulateProgress(85, 100, config.idle.dur);
+        await simulateProgress(66, 100, configRef.current.step3.dur);
 
       } catch (e) {
         break; // Aborted
       }
-    } while (isLoopingRef.current && isPlayingRef.current);
+    } while (isPlayingRef.current);
 
     if (isPlayingRef.current) {
       setIsPlaying(false);
@@ -176,7 +210,7 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
     if (isPlayingRef.current) {
       isPlayingRef.current = false;
       setIsPlaying(false);
-      setAnimationState("idle");
+      setAnimationState("step1");
       setProgress(0);
     } else {
       isPlayingRef.current = true;
@@ -186,36 +220,34 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
   };
 
   const resetCanvas = () => {
-    isLoopingRef.current = false;
-    setIsLooping(false);
     isPlayingRef.current = false;
     setIsPlaying(false);
-    setAnimationState("idle");
+    setAnimationState("step1");
     setProgress(0);
   };
 
-  // Build variants from config state dynamically (only X and Scale)
-  const blueVariants = {
-    idle: { x: config.idle.bX, scale: config.idle.bScale, transition: { duration: config.idle.dur / 1000, ease: "easeInOut" } },
-    step1: { x: config.step1.bX, scale: config.step1.bScale, transition: { duration: config.step1.dur / 1000, ease: "easeOut" } },
-    step2: { x: config.step2.bX, scale: config.step2.bScale, transition: { duration: config.step2.dur / 1000, ease: "easeInOut" } },
-    step3: { x: config.step3.bX, scale: config.step3.bScale, transition: { duration: config.step3.dur / 1000, ease: "easeIn" } }
+  // Build variants from config state dynamically
+  const blueVariants: Variants = {
+    step1: { x: config?.step1?.bX ?? -140, transition: { duration: (config?.step1?.dur ?? 800) / 1000, ease: "easeOut" } },
+    step2: { x: config?.step2?.bX ?? -40, transition: { duration: (config?.step2?.dur ?? 1200) / 1000, ease: "easeInOut" } },
+    step3: { x: config?.step3?.bX ?? 140, transition: { duration: (config?.step3?.dur ?? 800) / 1000, ease: "easeIn" } }
   };
 
-  const redVariants = {
-    idle: { x: config.idle.rX, scale: config.idle.rScale, transition: { duration: config.idle.dur / 1000, ease: "easeInOut" } },
-    step1: { x: config.step1.rX, scale: config.step1.rScale, transition: { duration: config.step1.dur / 1000, ease: "easeOut" } },
-    step2: { x: config.step2.rX, scale: config.step2.rScale, transition: { duration: config.step2.dur / 1000, ease: "easeInOut" } },
-    step3: { x: config.step3.rX, scale: config.step3.rScale, transition: { duration: config.step3.dur / 1000, ease: "easeIn" } }
+  const redVariants: Variants = {
+    step1: { x: config?.step1?.rX ?? 140, transition: { duration: (config?.step1?.dur ?? 800) / 1000, ease: "easeOut" } },
+    step2: { x: config?.step2?.rX ?? 40, transition: { duration: (config?.step2?.dur ?? 1200) / 1000, ease: "easeInOut" } },
+    step3: { x: config?.step3?.rX ?? -140, transition: { duration: (config?.step3?.dur ?? 800) / 1000, ease: "easeIn" } }
   };
 
-  const currentBlueLook = config[animationState].bLook;
-  const currentBlueMood = config[animationState].bMood;
-  const currentBlueItem = config[animationState].bItem;
+  const currentBlueLook = config?.[animationState]?.bLook ?? "forward";
+  const currentBlueMood = config?.[animationState]?.bMood ?? "neutral";
+  const currentBlueItem = config?.[animationState]?.bItem ?? "none";
+  const currentBlueSpeech = config?.[animationState]?.bSpeech ?? "";
 
-  const currentRedLook = config[animationState].rLook;
-  const currentRedMood = config[animationState].rMood;
-  const currentRedItem = config[animationState].rItem;
+  const currentRedLook = config?.[animationState]?.rLook ?? "forward";
+  const currentRedMood = config?.[animationState]?.rMood ?? "neutral";
+  const currentRedItem = config?.[animationState]?.rItem ?? "none";
+  const currentRedSpeech = config?.[animationState]?.rSpeech ?? "";
 
   const updateConfig = (stepKey: string, field: string, value: string | number) => {
     setConfig(prev => ({
@@ -251,11 +283,11 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
           <Activity size={24} />
         </div>
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-red-500">
-          Dynamic Animation Generator
+          Dynamic Content Generator
         </h1>
       </div>
 
-      <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-2xl shadow-zinc-200/20 dark:shadow-black/50 group">
+      <div className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-2xl shadow-zinc-200/20 dark:shadow-black/50 group">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
 
         {/* Floor Line */}
@@ -271,7 +303,7 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
                 <div className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-800"></div>
                 <div className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
               </div>
-              <p className="mt-4 text-zinc-600 dark:text-zinc-300 font-medium animate-pulse">Applying AI adjustments...</p>
+              {/* <p className="mt-4 text-zinc-600 dark:text-zinc-300 font-medium animate-pulse">Applying AI adjustments...</p> */}
             </motion.div>
           )}
         </AnimatePresence>
@@ -285,6 +317,8 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
             animate={animationState}
             className="absolute w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[0_0_40px_rgba(59,130,246,0.5)] flex items-center justify-center z-10"
           >
+            <SpeechBubble text={currentBlueSpeech} isBandit={false} />
+
             {/* Sheriff Hat */}
             <div className={`absolute -top-6 w-24 flex flex-col items-center z-30 transition-transform duration-300 ${currentBlueLook === 'left' ? '-rotate-6 -translate-x-1' : currentBlueLook === 'right' ? 'rotate-6 translate-x-1' : ''}`}>
               <div className="w-10 h-6 bg-amber-700 rounded-t-lg -mb-1 shadow-inner"></div>
@@ -315,6 +349,8 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
             animate={animationState}
             className="absolute w-20 h-20 rounded-full bg-gradient-to-br from-red-400 to-red-600 shadow-[0_0_40px_rgba(239,68,68,0.5)] flex items-center justify-center z-10"
           >
+            <SpeechBubble text={currentRedSpeech} isBandit={true} />
+
             {/* Beanie */}
             <div className={`absolute -top-1 w-16 h-8 overflow-hidden z-30 rounded-t-full flex flex-col transition-transform duration-300 ${currentRedLook === 'left' ? '-rotate-6 -translate-x-1' : currentRedLook === 'right' ? 'rotate-6 translate-x-1' : ''}`}>
               <div className="w-full h-2 bg-zinc-900"></div>
@@ -345,118 +381,143 @@ export default function AnimationCanvas({ isLoading, config, setConfig }: Animat
           />
         </div>
 
-        {/* Floating Controls */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 rounded-full bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-xl transition-all duration-300 z-50">
-          <button onClick={runTimeline} disabled={isLoading} className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 font-medium hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 min-w-[140px] justify-center">
-            {isPlaying ? (<><Square size={16} fill="currentColor" /><span>Stop</span></>) : (<><Play size={18} /><span>Play</span></>)}
+      </div>
+
+      {/* Controls Container (Below Canvas) */}
+      <div className="flex flex-col items-center gap-4 w-full">
+        <div className="flex flex-wrap justify-center items-center gap-2 p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm w-full lg:w-auto">
+          <button onClick={runTimeline} disabled={isLoading} className="p-2.5 rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex-1 lg:flex-none flex justify-center disabled:opacity-50" title={isPlaying ? "Parar" : "Tocar"}>
+            {isPlaying ? <Square size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </button>
-          <div className="w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-          <button onClick={resetCanvas} className="p-2.5 rounded-full text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors" title="Reset Canvas"><RotateCcw size={20} /></button>
-          <div className="w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-          <button onClick={toggleLoop} disabled={isLoading} className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-medium transition-all ${isLooping ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`} title="Toggle Loop">
-            <Repeat size={18} className={isLooping ? "animate-pulse" : ""} />
-            <span className="hidden sm:inline">{isLooping ? "Looping" : "Loop"}</span>
+          <div className="hidden lg:block w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+          <button onClick={() => setIsAutoGenerate(!isAutoGenerate)} className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all flex-[2] lg:flex-none min-w-[180px] ${isAutoGenerate ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent"}`} title="Alternar Geração Automática">
+            <Infinity size={18} className={isAutoGenerate ? "animate-pulse" : ""} />
+            <span>Geração Automática</span>
           </button>
-          <div className="w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-          <button onClick={() => setShowDebug(!showDebug)} className={`p-2.5 rounded-full transition-colors ${showDebug ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`} title="Toggle Debug Mode">
+          <div className="hidden lg:block w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+          <button onClick={() => {
+            if (onGenerateNewScene) {
+              onGenerateNewScene();
+            }
+            if (!isPlayingRef.current) {
+              runTimeline();
+            }
+          }} disabled={isLoading} className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex-[2] lg:flex-none min-w-[180px]`} title="Gerar Nova Cena">
+            <Sparkles size={18} className={isLoading ? "animate-pulse" : ""} />
+            <span>Gerar Nova Cena</span>
+          </button>
+          <div className="hidden lg:block w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
+          <button onClick={() => setShowDebug(!showDebug)} className={`p-2.5 rounded-xl transition-colors flex-1 lg:flex-none flex justify-center ${showDebug ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`} title="Alternar Modo Diretor">
             <Settings2 size={20} />
           </button>
         </div>
+
+        {/* Auto Generate Progress Bar */}
+        <AnimatePresence>
+          {isAutoGenerate && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="w-full lg:w-[400px] overflow-hidden">
+              <div className="flex flex-col gap-1.5 items-center px-4 py-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm w-full">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Gerando automaticamente em {(timeRemaining / 1000).toFixed(1)}s</span>
+                <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800/50 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-500 transition-all duration-75" style={{ width: `${(timeRemaining / 15000) * 100}%` }} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Debugging Mode Panel */}
       <AnimatePresence>
         {showDebug && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm">
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden flex-shrink-0">
+            <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-sm max-h-[40vh] overflow-y-auto">
               <div className="flex items-center gap-2 mb-6 text-zinc-800 dark:text-zinc-200 font-semibold text-lg">
                 <SlidersHorizontal size={20} className="text-blue-500" />
-                <h3>Director Mode (Horizontal Layout)</h3>
+                <h3>Modo Diretor (Configuração)</h3>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-4">
-                {['step1', 'step2', 'step3', 'idle'].map((stepKey, idx) => {
-                  const stepLabel = stepKey === 'idle' ? 'Step 4: Return' : `Step ${idx + 1}: ${idx === 0 ? 'Start' : idx === 1 ? 'Swap' : 'Clash'}`;
-                  const stepData = (config as any)[stepKey];
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {['step1', 'step2', 'step3'].map((stepKey, idx) => {
+                  const stepLabel = `Passo ${idx + 1}`;
+                  const stepData = (config as any)?.[stepKey] || {};
 
                   return (
                     <div key={stepKey} className="flex flex-col gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-200 dark:border-zinc-800">
                       <h4 className="font-bold text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-700 pb-2">{stepLabel}</h4>
 
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-zinc-500 flex justify-between"><span>Duration</span><span>{stepData.dur}ms</span></label>
+                        <label className="text-xs font-medium text-zinc-500 flex justify-between"><span>Duração</span><span>{stepData.dur}ms</span></label>
                         <input type="range" min="200" max="3000" value={stepData.dur} onChange={(e) => updateConfig(stepKey, 'dur', Number(e.target.value))} className="accent-green-500 h-1.5" />
                       </div>
 
                       {/* Sheriff Settings */}
                       <div className="p-3 bg-blue-500/5 rounded-xl border border-blue-500/10 flex flex-col gap-3">
-                        <h5 className="text-xs font-bold text-blue-600 dark:text-blue-400">Sheriff (Blue)</h5>
+                        <h5 className="text-xs font-bold text-blue-600 dark:text-blue-400">Xerife (Azul)</h5>
 
                         <div className="grid grid-cols-2 gap-2 text-[10px]">
                           <select value={stepData.bLook} onChange={(e) => updateConfig(stepKey, 'bLook', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full">
-                            <option value="left">Look Left</option>
-                            <option value="forward">Look Fwd</option>
-                            <option value="right">Look Right</option>
+                            <option value="left">Olhar Esquerda</option>
+                            <option value="forward">Olhar Frente</option>
+                            <option value="right">Olhar Direita</option>
                           </select>
                           <select value={stepData.bMood} onChange={(e) => updateConfig(stepKey, 'bMood', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full font-bold">
-                            <option value="neutral">😐 Neutral</option>
-                            <option value="happy">😀 Happy</option>
-                            <option value="angry">😠 Angry</option>
-                            <option value="shocked">😲 Shocked</option>
+                            <option value="neutral">😐 Neutro</option>
+                            <option value="happy">😀 Feliz</option>
+                            <option value="angry">😠 Irritado</option>
+                            <option value="shocked">😲 Chocado</option>
                           </select>
                           <select value={stepData.bItem} onChange={(e) => updateConfig(stepKey, 'bItem', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full col-span-2">
-                            <option value="none">Item: Empty</option>
-                            <option value="gun">Item: Gun</option>
-                            <option value="money">Item: Money</option>
+                            <option value="none">Item: Vazio</option>
+                            <option value="gun">Item: Arma</option>
+                            <option value="money">Item: Dinheiro</option>
                             <option value="banana">Item: Banana</option>
-                            <option value="coffee">Item: Coffee</option>
-                            <option value="bomb">Item: Bomb</option>
+                            <option value="coffee">Item: Café</option>
+                            <option value="bomb">Item: Bomba</option>
                           </select>
                         </div>
 
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-medium text-zinc-500 flex justify-between"><span>X Pos</span><span>{stepData.bX}px</span></label>
+                          <label className="text-[10px] font-medium text-zinc-500 flex justify-between"><span>Posição X</span><span>{stepData.bX}px</span></label>
                           <input type="range" min="-300" max="300" value={stepData.bX} onChange={(e) => updateConfig(stepKey, 'bX', Number(e.target.value))} className="accent-blue-500 h-1" />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-medium text-zinc-500 flex justify-between"><span>Scale</span><span>{stepData.bScale}x</span></label>
-                          <input type="range" min="0.5" max="3" step="0.1" value={stepData.bScale} onChange={(e) => updateConfig(stepKey, 'bScale', Number(e.target.value))} className="accent-zinc-500 h-1" />
+                          <input type="text" placeholder="Fala..." value={stepData.bSpeech} onChange={(e) => updateConfig(stepKey, 'bSpeech', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full text-[10px]" />
                         </div>
                       </div>
 
                       {/* Bandit Settings */}
                       <div className="p-3 bg-red-500/5 rounded-xl border border-red-500/10 flex flex-col gap-3">
-                        <h5 className="text-xs font-bold text-red-600 dark:text-red-400">Bandit (Red)</h5>
+                        <h5 className="text-xs font-bold text-red-600 dark:text-red-400">Bandido (Vermelho)</h5>
 
                         <div className="grid grid-cols-2 gap-2 text-[10px]">
                           <select value={stepData.rLook} onChange={(e) => updateConfig(stepKey, 'rLook', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full">
-                            <option value="left">Look Left</option>
-                            <option value="forward">Look Fwd</option>
-                            <option value="right">Look Right</option>
+                            <option value="left">Olhar Esquerda</option>
+                            <option value="forward">Olhar Frente</option>
+                            <option value="right">Olhar Direita</option>
                           </select>
                           <select value={stepData.rMood} onChange={(e) => updateConfig(stepKey, 'rMood', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full font-bold">
-                            <option value="neutral">😐 Neutral</option>
-                            <option value="happy">😀 Happy</option>
-                            <option value="angry">😠 Angry</option>
-                            <option value="shocked">😲 Shocked</option>
+                            <option value="neutral">😐 Neutro</option>
+                            <option value="happy">😀 Feliz</option>
+                            <option value="angry">😠 Irritado</option>
+                            <option value="shocked">😲 Chocado</option>
                           </select>
                           <select value={stepData.rItem} onChange={(e) => updateConfig(stepKey, 'rItem', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full col-span-2">
-                            <option value="none">Item: Empty</option>
-                            <option value="gun">Item: Gun</option>
-                            <option value="money">Item: Money</option>
+                            <option value="none">Item: Vazio</option>
+                            <option value="gun">Item: Arma</option>
+                            <option value="money">Item: Dinheiro</option>
                             <option value="banana">Item: Banana</option>
-                            <option value="coffee">Item: Coffee</option>
-                            <option value="bomb">Item: Bomb</option>
+                            <option value="coffee">Item: Café</option>
+                            <option value="bomb">Item: Bomba</option>
                           </select>
                         </div>
 
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-medium text-zinc-500 flex justify-between"><span>X Pos</span><span>{stepData.rX}px</span></label>
+                          <label className="text-[10px] font-medium text-zinc-500 flex justify-between"><span>Posição X</span><span>{stepData.rX}px</span></label>
                           <input type="range" min="-300" max="300" value={stepData.rX} onChange={(e) => updateConfig(stepKey, 'rX', Number(e.target.value))} className="accent-red-500 h-1" />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-medium text-zinc-500 flex justify-between"><span>Scale</span><span>{stepData.rScale}x</span></label>
-                          <input type="range" min="0.5" max="3" step="0.1" value={stepData.rScale} onChange={(e) => updateConfig(stepKey, 'rScale', Number(e.target.value))} className="accent-zinc-500 h-1" />
+                          <input type="text" placeholder="Fala..." value={stepData.rSpeech} onChange={(e) => updateConfig(stepKey, 'rSpeech', e.target.value)} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded p-1 w-full text-[10px]" />
                         </div>
                       </div>
 
