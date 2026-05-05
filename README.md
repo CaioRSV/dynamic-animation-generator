@@ -53,6 +53,30 @@ Aliado a isso, removi a necessidade de inputs textuais clássicos (digitar promp
 
 ---
 
+## Como Rodar
+
+Para executar este projeto localmente, siga os passos abaixo:
+
+1. **Ollama (Local LLM)**  
+   - Certifique-se de ter o [Ollama](https://ollama.com/) instalado e rodando em sua máquina.
+   - Baixe o modelo utilizado (por padrão `qwen2.5:3b`):
+     ```bash
+     ollama run qwen2.5:3b
+     ```
+
+2. **Configuração do Modelo**  
+   - Se desejar usar um modelo diferente, atualize a variável `model` no arquivo `app/api/generate/route.ts` e use o comando de run no modelo especificado.
+
+3. **Instalação e Execução**  
+   - Instale as dependências: `npm install`
+   - Realize o build: `npm run build`
+   - Inicie o servidor: `npm start` (ou `npm run dev` para desenvolvimento).
+
+4. **Acesso**  
+   - Abra `http://localhost:3000` e permita o acesso à câmera.
+
+---
+
 ## Ideia Central
 
 > A IA atua exclusivamente como **máquina de estados e motor narrativo**, e nunca como geradora de pixels.
