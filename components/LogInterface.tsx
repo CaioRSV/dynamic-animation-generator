@@ -36,22 +36,20 @@ export default function LogInterface({ isLoading, logs }: LogInterfaceProps) {
   return (
     <div className="w-full h-full flex flex-col border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl overflow-hidden bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-xl shadow-zinc-200/20 dark:shadow-black/50 relative">
 
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div className="absolute inset-0 z-20 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm flex flex-col items-center justify-center">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-          <p className="text-zinc-600 dark:text-zinc-300 font-medium animate-pulse">
-            Gerando sequências...
-          </p>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md z-10">
         <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
           <Sparkles size={18} />
         </div>
-        <h2 className="font-semibold text-zinc-800 dark:text-zinc-200">Logs do Diretor</h2>
+        <div className="flex">
+          <h2 className="font-semibold text-zinc-800 dark:text-zinc-200 leading-tight">Logs do Diretor</h2>
+        </div>
+        {isLoading && (
+          <div className="flex items-center gap-1.5 mt-0.5 py-2 flex-0.5">
+            <span className="text-[20px] text-blue-500 font-bold uppercase tracking-wider animate-pulse">Gerando...</span>
+            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+          </div>
+        )}
       </div>
 
       {/* Logs Area */}
@@ -70,7 +68,7 @@ export default function LogInterface({ isLoading, logs }: LogInterfaceProps) {
                 </span>
               )}
             </div>
-            <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
+            <p className="text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
               {log.content}
             </p>
           </div>

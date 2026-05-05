@@ -7,106 +7,157 @@ export async function POST(req: Request) {
     const body = await req.json();
     const prompt = body.prompt;
     const emotion = body.emotion || "neutral";
-    const history = body.history || [];
+    const history = (body.history || []).slice(-8);
     const isAutoLoop = body.isAutoLoop || false;
+    const lastReasoning = currentConfig.reasoning || "";
     currentConfig = body.currentConfig || {};
 
-    const systemPrompt = `You are an animation director for a web canvas featuring two characters: a Blue Sheriff and a Red Bandit.
-They animate through 3 sequential steps per sequence: step1, step2, and step3.
-The narrative and story of this sequence unfolds slowly and methodically, focusing heavily on continuous dialogue.
-Each step has properties for both characters:
-- dur: duration in ms (default 2500-3500). This determines how long the speech bubble stays on screen! Give the viewer enough time to read it (at least 2.5 seconds).
-- bX/rX: X position (-300 to 300). Keep transitions gradual across steps.
-- bLook/rLook: look direction ("left", "forward", "right")
-- bMood/rMood: facial expression ("neutral", "happy", "angry", "shocked")
-- bItem/rItem: item held ("none", "gun", "money", "banana", "coffee", "bomb")
-- bSpeech/rSpeech: Speech bubble text (1 to 5 words max). Focus heavily on the dialogue! Use empty string "" if they shouldn't speak in that specific step, but make sure they converse over the sequence. ALL DIALOGUE MUST BE IN PORTUGUESE (PT-BR).
+    const systemPrompt = `Cena: Xerife interrogando suspeito ao ar livre (dia).
+JSON OBRIGATÓRIO: {"reasoning":"...","steps":[{"sheriffMood":"...","sheriffSpeech":"...","banditMood":"...","banditSpeech":"..."}]}
 
-Given the user's request, output ONLY a valid JSON object matching the exact config structure. No markdown, no explanations. 
-You MUST output an array of sequences under the "sequences" key AND a "reasoning" string explaining how the user's emotion directed the story.
-Ensure the animation is SMOOTH. Focus almost entirely on a continuous, slow-building conversation based on the provided dialogue history.
-CRITICAL: Keep physical movements SUBTLE. Do not make them jump around suddenly. The physical movements (X position, look direction, mood) should logically align with the conversation but dialogue is the absolute priority.
+REGRAS:
+1. Gere uma lista (array) de EXATAMENTE 8 passos no campo "steps".
+2. Moods: neutral, angry, shocked, sad.
+3. Speech: Diálogos de 1-5 palavras, sempre em português brasileiro.
+4. Alternância: Xerife fala nos passos ímpares (1,3,5,7), Bandido nos pares (2,4,6,8). Ouvinte usa "".
+5. Reaja à EMOÇÃO do usuário. Xerife autoritário, Bandido sarcástico.
+6. reasoning: máximo 10 palavras.
+`;
 
-Config Structure:
-{
-  "reasoning": "O usuário estava com raiva, então eu fiz o Xerife ser mais agressivo e o Bandido revidar.",
-  "sequences": [
-    {
-      "step1": { "dur": 2500, "bX": -160, "bLook": "right", "bMood": "neutral", "bItem": "none", "bSpeech": "Quem está aí?", "rX": 160, "rLook": "left", "rMood": "neutral", "rItem": "none", "rSpeech": "..." },
-      "step2": { "dur": 3000, "bX": -100, "bLook": "right", "bMood": "angry", "bItem": "none", "bSpeech": "Apareça devagar.", "rX": 100, "rLook": "left", "rMood": "neutral", "rItem": "banana", "rSpeech": "Calma aí, Xerife." },
-      "step3": { "dur": 2500, "bX": -100, "bLook": "right", "bMood": "angry", "bItem": "gun", "bSpeech": "Não se mova.", "rX": 100, "rLook": "left", "rMood": "happy", "rItem": "banana", "rSpeech": "Eu não fiz nada." }
-    }
-  ]
-}`;
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not defined in environment variables.");
-    }
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch("http://127.0.0.1:11434/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        systemInstruction: {
-          parts: [{ text: systemPrompt }]
-        },
-        contents: [
+        model: "qwen2.5:3b",
+        messages: [
+          { role: "system", content: systemPrompt },
           {
-            parts: [{ text: isAutoLoop 
-              ? `[CONTINUOUS DIALOGUE MODE]\n${emotion !== 'none (initial)' ? `The user is reacting with emotion: ${emotion}. Incorporate this into the dialogue!\n` : `This is the very first scene. Start a conversation.\n`}\n[DIALOGUE HISTORY (Read carefully!)]\n${history.length > 0 ? history.join('\n') : 'No previous dialogue.'}\n\n[CURRENT STATE]\n${JSON.stringify(currentConfig)}\n\nGenerate the next sequence of dialogue. Output ONLY JSON containing a "sequences" array and a "reasoning" string.`
-              : `Current config:\n${JSON.stringify(currentConfig)}\n\nUser request: ${prompt}\n\nRemember, output ONLY JSON containing a "sequences" array of length 1.` 
-            }]
+            role: "user", content: isAutoLoop
+              ? `ULTIMO ACONTECIMENTO: ${lastReasoning}
+DIÁLOGO RECENTE: ${history.join(' | ')}
+EMOÇÃO ATUAL DO USUÁRIO: ${emotion}
+
+TAREFA: Continue a cena. Gere EXATAMENTE 8 PASSOS. Foque em novo diálogo, não repita o anterior. Output JSON.`
+              : `HISTÓRICO: ${history.join('\n')}
+ULTIMO ESTADO: ${JSON.stringify(currentConfig.step8 || currentConfig.step4 || {})}
+PEDIDO: ${prompt}
+TAREFA: Gere uma cena COMPLETA (step1 a step8) baseada no pedido. Output JSON.`
           }
         ],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
+        stream: false,
+        format: "json"
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.warn("Gemini API returned an error:", response.status, errorText);
-      throw new Error(`Gemini API error: ${errorText}`);
+      console.warn("Ollama API returned an error:", response.status, errorText);
+      throw new Error(`Ollama API error: ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.message?.content;
+
+    console.log("=== RAW AI RESPONSE ===");
+    console.log(content);
+    console.log("=======================");
 
     if (content) {
       try {
         const jsonMatch = content.match(/\{[\s\S]*\}/);
-        let parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
-        
+        const jsonToParse = jsonMatch ? jsonMatch[0] : content;
+
+        console.log("=== JSON TO PARSE ===");
+        console.log(jsonToParse);
+        console.log("=====================");
+
+        let parsed = JSON.parse(jsonToParse);
+
+        console.log("=== SUCCESSFULLY PARSED JSON ===");
+        console.log(JSON.stringify(parsed, null, 2));
+        console.log("================================");
+
         let sequences = parsed.sequences || [parsed];
-        
-        const enforceSpacing = (step: any) => {
+
+        const mapSimplifiedState = (step: any) => {
           if (!step) return step;
-          let bX = step.bX;
-          let rX = step.rX;
+
+          // Internal conversion from descriptive AI keys
+          const bMood = step.sheriffMood || step.bMood || "neutral";
+          const bSpeech = step.sheriffSpeech || step.bSpeech || "";
+          const rMood = step.banditMood || step.rMood || "neutral";
+          const rSpeech = step.banditSpeech || step.rSpeech || "";
+
+          const bX = -120;
+          const rX = 120;
+
+          const bSpeechLower = bSpeech.toLowerCase();
+          const rSpeechLower = rSpeech.toLowerCase();
+
+          let bItem = "none";
+          if (bSpeechLower.includes("arma") || bSpeechLower.includes("pistola") || bSpeechLower.includes("parado")) bItem = "gun";
+          if (bSpeechLower.includes("café") || bSpeechLower.includes("bebida")) bItem = "coffee";
+          if (bSpeechLower.includes("dinheiro") || bSpeechLower.includes("grana") || bSpeechLower.includes("money")) bItem = "money";
           
-          // Only adjust if both are provided by AI
-          if (typeof bX === 'number' && typeof rX === 'number') {
-            const MIN_DISTANCE = 110; // Minimum pixels between them
-            if (rX - bX < MIN_DISTANCE) {
-              const mid = (bX + rX) / 2;
-              bX = Math.round(mid - MIN_DISTANCE / 2);
-              rX = Math.round(mid + MIN_DISTANCE / 2);
-            }
+          // New tension logic: if both are angry, Sheriff draws his gun
+          if (bMood === "angry" && rMood === "angry") {
+            bItem = "gun";
           }
-          return { ...step, ...(typeof bX === 'number' ? { bX } : {}), ...(typeof rX === 'number' ? { rX } : {}) };
+
+          let rItem = "none";
+          if (rSpeechLower.includes("bomba") || rSpeechLower.includes("explosivo")) rItem = "bomb";
+          if (rSpeechLower.includes("banana")) rItem = "banana";
+          if (rSpeechLower.includes("dinheiro") || rSpeechLower.includes("grana") || rSpeechLower.includes("money") || rSpeechLower.includes("ouro")) rItem = "money";
+          if (rSpeechLower.includes("arma") || rSpeechLower.includes("atirar")) rItem = "gun";
+
+          return {
+            bMood, bSpeech, rMood, rSpeech,
+            dur: 3000,
+            bX, rX, bItem, rItem,
+            bLook: "right", rLook: "left"
+          };
         };
 
-        sequences = sequences.map((seq: any) => ({
-          step1: { ...(currentConfig.step1 || {}), ...enforceSpacing(seq.step1) },
-          step2: { ...(currentConfig.step2 || {}), ...enforceSpacing(seq.step2) },
-          step3: { ...(currentConfig.step3 || {}), ...enforceSpacing(seq.step3) }
-        }));
+        // Get steps from array
+        let aiSteps = parsed.steps || [];
+        if (!Array.isArray(aiSteps)) {
+          const firstSeq = parsed.sequences?.[0] || parsed;
+          aiSteps = [
+            firstSeq.step1, firstSeq.step2, firstSeq.step3, firstSeq.step4,
+            firstSeq.step5, firstSeq.step6, firstSeq.step7, firstSeq.step8
+          ].filter(Boolean);
+        }
 
-        return NextResponse.json({ sequences, reasoning: parsed.reasoning, isMock: false });
+        // Ensure we have exactly 8 steps
+        if (aiSteps.length > 8) aiSteps = aiSteps.slice(0, 8);
+        while (aiSteps.length < 8) {
+          aiSteps.push(aiSteps[aiSteps.length - 1] || {});
+        }
+
+        let lastStep = currentConfig.step8 || currentConfig.step4 || {};
+        const processedSteps: any = {};
+
+        aiSteps.forEach((rawStep: any, idx: number) => {
+          const mappedStep = mapSimplifiedState(rawStep || {});
+          const merged = {
+            ...lastStep,
+            bSpeech: "",
+            rSpeech: "",
+            ...mappedStep
+          };
+          processedSteps[`step${idx + 1}`] = merged;
+          lastStep = merged;
+        });
+
+        const finalSequence = {
+          reasoning: parsed.reasoning,
+          ...processedSteps
+        };
+
+        return NextResponse.json({ sequences: [finalSequence], reasoning: parsed.reasoning, isMock: false });
       } catch (e) {
         console.error("Failed to parse JSON from LLM:", content);
         throw new Error("LLM did not return valid JSON");
@@ -117,10 +168,16 @@ Config Structure:
   } catch (error: any) {
     console.error("API error:", error);
     // Graceful fallback if Gemini API fails or returns bad JSON
+    const last = currentConfig.step8 || currentConfig.step4 || {};
     const fallbackConfig = {
-      ...currentConfig,
-      step2: { ...(currentConfig.step2 || {}), bMood: "shocked", bItem: "banana", rItem: "bomb", rMood: "happy" },
-      step3: { ...(currentConfig.step3 || {}), bMood: "angry", bItem: "gun", rItem: "gun", rMood: "angry" }
+      step1: { ...last, bSpeech: "Opa...", rSpeech: "", bMood: "neutral" },
+      step2: { ...last, bSpeech: "", rSpeech: "Hã?", rMood: "shocked" },
+      step3: { ...last, bSpeech: "Algo deu errado na conexão.", rSpeech: "", bMood: "angry" },
+      step4: { ...last, bSpeech: "", rSpeech: "Vou tentar de novo.", rMood: "neutral" },
+      step5: { ...last, bSpeech: "Aguarde um momento...", rSpeech: "", bMood: "neutral" },
+      step6: { ...last, bSpeech: "", rSpeech: "Tudo bem.", rMood: "happy" },
+      step7: { ...last, bSpeech: "Ok.", rSpeech: "", bMood: "happy" },
+      step8: { ...last, bSpeech: "", rSpeech: "Pronto.", rMood: "neutral" }
     };
     return NextResponse.json({ sequences: [fallbackConfig], isMock: true, error: error.message });
   }

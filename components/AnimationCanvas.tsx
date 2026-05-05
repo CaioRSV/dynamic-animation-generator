@@ -48,9 +48,15 @@ const CoffeeSvg = () => (
 const SpeechBubble = ({ text, isBandit }: { text: string, isBandit: boolean }) => {
   if (!text) return null;
   return (
-    <div className={`absolute -top-14 ${isBandit ? 'left-10' : 'right-10'} z-[100] bg-white text-zinc-900 px-3 py-1.5 rounded-2xl shadow-xl border border-zinc-200/60 text-xs font-bold whitespace-nowrap`}>
+    <div className={`absolute -top-24 ${isBandit ? 'left-full ml-4' : 'right-full mr-4'} z-[200] bg-white/95 backdrop-blur-md text-zinc-900 px-6 py-4 rounded-[2.5rem] shadow-2xl border border-zinc-200/80 text-sm sm:text-lg font-black min-w-[200px] max-w-[350px] sm:max-w-[450px] leading-snug text-center flex items-center justify-center`}>
       {text}
-      <div className={`absolute bottom-0 ${isBandit ? 'left-3' : 'right-3'} translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-white`}></div>
+      {/* Slanted Triangular Tail pointing to characters */}
+      <div className={`absolute bottom-[-12px] ${isBandit ? 'left-4' : 'right-4'} w-8 h-8 pointer-events-none`}>
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d={isBandit ? "M24 0L0 24L8 0" : "M8 0L32 24L24 0"} fill="white" />
+          <path d={isBandit ? "M24 0L0 24L8 0" : "M8 0L32 24L24 0"} stroke="currentColor" strokeWidth="1" className="text-zinc-200/80" strokeLinejoin="round" />
+        </svg>
+      </div>
     </div>
   );
 };
@@ -60,42 +66,34 @@ const Face = ({ look, mood, isBandit }: { look: string, mood: string, isBandit: 
   const pupilSize = mood === 'shocked' ? 'w-1.5 h-1.5' : (isBandit ? 'w-3.5 h-3.5' : 'w-3 h-3');
   const leftPupilOffset = look === 'left' ? '-translate-x-1.5' : look === 'right' ? 'translate-x-1.5' : '';
   const rightPupilOffset = look === 'left' ? '-translate-x-1.5' : look === 'right' ? 'translate-x-1.5' : '';
-  const eyebrowColor = isBandit ? 'bg-black border border-zinc-700/50' : 'bg-amber-950';
+  const eyebrowColor = isBandit ? 'bg-yellow-700' : 'bg-amber-950';
 
   return (
     <div className={`relative flex flex-col items-center ${isBandit ? 'gap-1.5' : 'gap-1'}`}>
       {/* Eyebrows (Dynamic based on mood) */}
       <div className={`absolute -top-2 w-[130%] flex justify-between z-30 px-0.5 pointer-events-none`}>
-        <div className={`w-5 h-2.5 ${eyebrowColor} rounded-full transition-all duration-300 shadow-sm ${mood === 'angry' ? 'rotate-[25deg] translate-y-2' :
-          mood === 'shocked' ? '-rotate-[20deg] -translate-y-1' :
-            mood === 'happy' ? '-rotate-[10deg] translate-y-0.5' : 'rotate-0 translate-y-0.5'
+        <div className={`w-8 h-2.5 ${eyebrowColor} rounded-full transition-all duration-300 shadow-sm ${mood === 'angry' ? 'rotate-[25deg] translate-y-2.0' :
+          mood === 'sad' ? '-rotate-[20deg] -translate-y-0.5' :
+            mood === 'shocked' ? '-rotate-[20deg] -translate-y-1' :
+              mood === 'happy' ? '-rotate-[10deg] translate-y-0.5' : 'rotate-0 translate-y-0.5'
           }`}></div>
-        <div className={`w-5 h-2.5 ${eyebrowColor} rounded-full transition-all duration-300 shadow-sm ${mood === 'angry' ? '-rotate-[25deg] translate-y-2' :
-          mood === 'shocked' ? 'rotate-[20deg] -translate-y-1' :
-            mood === 'happy' ? 'rotate-[10deg] translate-y-0.5' : 'rotate-0 translate-y-0.5'
+        <div className={`w-8 h-2.5 ${eyebrowColor} rounded-full transition-all duration-300 shadow-sm ${mood === 'angry' ? '-rotate-[25deg] translate-y-2.0' :
+          mood === 'sad' ? 'rotate-[20deg] -translate-y-0.5' :
+            mood === 'shocked' ? 'rotate-[20deg] -translate-y-1' :
+              mood === 'happy' ? 'rotate-[10deg] translate-y-0.5' : 'rotate-0 translate-y-0.5'
           }`}></div>
       </div>
 
       {/* Eyes */}
       <div className={`flex items-center justify-center ${isBandit ? 'gap-1.5' : 'gap-1'}`}>
         <div className={`bg-white rounded-full flex items-center justify-center shadow-inner overflow-hidden border ${isBandit ? 'border-zinc-900 border-2 w-8 h-8' : 'border-zinc-300 w-7 h-7'} ${mood === 'shocked' ? 'scale-110' : ''}`}>
-          <div className={`bg-black rounded-full transition-all duration-200 ${pupilSize} ${leftPupilOffset} translate-y-1`} />
+          <div className={`bg-black rounded-full transition-all duration-200 ${pupilSize} ${leftPupilOffset} ${mood === 'sad' ? 'translate-y-2 opacity-80' : 'translate-y-1'}`} />
         </div>
         <div className={`bg-white rounded-full flex items-center justify-center shadow-inner overflow-hidden border ${isBandit ? 'border-zinc-900 border-2 w-7 h-7' : 'border-zinc-300 w-7 h-7'} ${mood === 'shocked' ? 'scale-110' : ''}`}>
-          <div className={`bg-black rounded-full transition-all duration-200 ${pupilSize} ${rightPupilOffset} translate-y-1`} />
+          <div className={`bg-black rounded-full transition-all duration-200 ${pupilSize} ${rightPupilOffset} ${mood === 'sad' ? 'translate-y-2 opacity-80' : 'translate-y-1'}`} />
         </div>
       </div>
 
-      {/* Mouths */}
-      {mood === 'happy' && !isBandit && (
-        <div className={`absolute -bottom-1 w-4 h-2 border-b-2 border-zinc-800 rounded-b-full`}></div>
-      )}
-      {mood === 'happy' && isBandit && (
-        <div className={`absolute -bottom-2 w-4 h-2 border-b-2 border-zinc-800 rounded-b-full`}></div>
-      )}
-      {mood === 'shocked' && (
-        <div className={`absolute ${isBandit ? '-bottom-3.5' : '-bottom-2.5'} w-3 h-4 bg-zinc-800 rounded-full`}></div>
-      )}
     </div>
   );
 };
@@ -111,61 +109,67 @@ export interface AnimationConfigData {
   step1: StepConfig;
   step2: StepConfig;
   step3: StepConfig;
+  step4: StepConfig;
+  step5: StepConfig;
+  step6: StepConfig;
+  step7: StepConfig;
+  step8: StepConfig;
 }
 
 interface AnimationCanvasProps {
   isLoading?: boolean;
   config: AnimationConfigData;
   setConfig: React.Dispatch<React.SetStateAction<AnimationConfigData>>;
+  isAutoGenerate?: boolean;
+  setIsAutoGenerate?: React.Dispatch<React.SetStateAction<boolean>>;
   onGenerateNewScene?: () => void;
+  onSequenceComplete?: () => void;
+  isLogsExpanded?: boolean;
+  isFacialExpanded?: boolean;
 }
 
 export default function AnimationCanvas({
   isLoading,
   config,
   setConfig,
-  onGenerateNewScene
+  isAutoGenerate = false,
+  setIsAutoGenerate,
+  onGenerateNewScene,
+  onSequenceComplete,
+  isLogsExpanded = true,
+  isFacialExpanded = true
 }: AnimationCanvasProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const isPlayingRef = useRef(false);
 
-  const [animationState, setAnimationState] = useState<"step1" | "step2" | "step3">("step1");
+  const [animationState, setAnimationState] = useState<"step1" | "step2" | "step3" | "step4" | "step5" | "step6" | "step7" | "step8">("step1");
   const [progress, setProgress] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
 
-  const [isAutoGenerate, setIsAutoGenerate] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(15000);
-
-  useEffect(() => {
-    if (!isAutoGenerate || isLoading) {
-      setTimeRemaining(15000);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => (prev <= 50 ? 0 : prev - 50));
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [isAutoGenerate, isLoading]);
-
-  useEffect(() => {
-    if (timeRemaining === 0 && isAutoGenerate && !isLoading) {
-      if (onGenerateNewScene) {
-        onGenerateNewScene();
-      }
-      setTimeRemaining(15000);
-    }
-  }, [timeRemaining, isAutoGenerate, isLoading, onGenerateNewScene]);
+  const isAutoGenerateRef = useRef(isAutoGenerate);
+  useEffect(() => { isAutoGenerateRef.current = isAutoGenerate; }, [isAutoGenerate]);
 
   const configRef = useRef(config);
-  useEffect(() => { configRef.current = config; }, [config]);
+  const animationSessionRef = useRef(0);
+
+  useEffect(() => {
+    configRef.current = config;
+    // When config changes (new generation), increment session to cancel current movement
+    animationSessionRef.current++;
+
+    // If it was playing, restart from step1 with the new config
+    if (isPlayingRef.current) {
+      playSequence();
+    }
+  }, [config]);
 
   const simulateProgress = async (start: number, end: number, duration: number) => {
+    const sessionId = animationSessionRef.current;
     return new Promise<void>((resolve, reject) => {
       const startTime = Date.now();
       const interval = setInterval(() => {
-        if (!isPlayingRef.current) {
+        // Abort if stopped OR if a new session (config change) started
+        if (!isPlayingRef.current || animationSessionRef.current !== sessionId) {
           clearInterval(interval);
           reject(new Error("aborted"));
           return;
@@ -182,24 +186,50 @@ export default function AnimationCanvas({
   };
 
   const playSequence = async () => {
-    do {
+    // Increment session for a clean start
+    const sessionId = ++animationSessionRef.current;
+
+    // Ensure we are in a playing state
+    isPlayingRef.current = true;
+    if (!isPlaying) setIsPlaying(true);
+
+    while (isPlayingRef.current && animationSessionRef.current === sessionId) {
       setProgress(0);
       try {
         setAnimationState("step1");
-        await simulateProgress(0, 33, configRef.current.step1.dur);
+        await simulateProgress(0, 12.5, configRef.current.step1.dur);
 
         setAnimationState("step2");
-        await simulateProgress(33, 66, configRef.current.step2.dur);
+        await simulateProgress(12.5, 25, configRef.current.step2.dur);
 
         setAnimationState("step3");
-        await simulateProgress(66, 100, configRef.current.step3.dur);
+        await simulateProgress(25, 37.5, configRef.current.step3.dur);
 
+        setAnimationState("step4");
+        await simulateProgress(37.5, 50, configRef.current.step4.dur);
+
+        setAnimationState("step5");
+        await simulateProgress(50, 62.5, configRef.current.step5.dur);
+
+        setAnimationState("step6");
+        await simulateProgress(62.5, 75, configRef.current.step6.dur);
+
+        setAnimationState("step7");
+        await simulateProgress(75, 87.5, configRef.current.step7.dur);
+
+        setAnimationState("step8");
+        await simulateProgress(87.5, 100, configRef.current.step8.dur);
+
+        if (isAutoGenerateRef.current && onSequenceComplete) {
+          onSequenceComplete();
+        }
       } catch (e) {
-        break; // Aborted
+        break; // Aborted by session change or stop
       }
-    } while (isPlayingRef.current);
+    }
 
-    if (isPlayingRef.current) {
+    // Only clean up if this was the last active session
+    if (animationSessionRef.current === sessionId) {
       setIsPlaying(false);
       isPlayingRef.current = false;
       setProgress(0);
@@ -210,11 +240,10 @@ export default function AnimationCanvas({
     if (isPlayingRef.current) {
       isPlayingRef.current = false;
       setIsPlaying(false);
+      animationSessionRef.current++; // Kill current session
       setAnimationState("step1");
       setProgress(0);
     } else {
-      isPlayingRef.current = true;
-      setIsPlaying(true);
       playSequence();
     }
   };
@@ -222,6 +251,7 @@ export default function AnimationCanvas({
   const resetCanvas = () => {
     isPlayingRef.current = false;
     setIsPlaying(false);
+    animationSessionRef.current++; // Kill current session
     setAnimationState("step1");
     setProgress(0);
   };
@@ -230,13 +260,23 @@ export default function AnimationCanvas({
   const blueVariants: Variants = {
     step1: { x: config?.step1?.bX ?? -140, transition: { duration: (config?.step1?.dur ?? 800) / 1000, ease: "easeOut" } },
     step2: { x: config?.step2?.bX ?? -40, transition: { duration: (config?.step2?.dur ?? 1200) / 1000, ease: "easeInOut" } },
-    step3: { x: config?.step3?.bX ?? 140, transition: { duration: (config?.step3?.dur ?? 800) / 1000, ease: "easeIn" } }
+    step3: { x: config?.step3?.bX ?? 140, transition: { duration: (config?.step3?.dur ?? 800) / 1000, ease: "easeIn" } },
+    step4: { x: config?.step4?.bX ?? 140, transition: { duration: (config?.step4?.dur ?? 800) / 1000, ease: "easeIn" } },
+    step5: { x: config?.step5?.bX ?? 100, transition: { duration: (config?.step5?.dur ?? 800) / 1000, ease: "easeInOut" } },
+    step6: { x: config?.step6?.bX ?? 50, transition: { duration: (config?.step6?.dur ?? 800) / 1000, ease: "easeInOut" } },
+    step7: { x: config?.step7?.bX ?? 0, transition: { duration: (config?.step7?.dur ?? 800) / 1000, ease: "easeInOut" } },
+    step8: { x: config?.step8?.bX ?? -100, transition: { duration: (config?.step8?.dur ?? 800) / 1000, ease: "easeOut" } }
   };
 
   const redVariants: Variants = {
     step1: { x: config?.step1?.rX ?? 140, transition: { duration: (config?.step1?.dur ?? 800) / 1000, ease: "easeOut" } },
     step2: { x: config?.step2?.rX ?? 40, transition: { duration: (config?.step2?.dur ?? 1200) / 1000, ease: "easeInOut" } },
-    step3: { x: config?.step3?.rX ?? -140, transition: { duration: (config?.step3?.dur ?? 800) / 1000, ease: "easeIn" } }
+    step3: { x: config?.step3?.rX ?? -140, transition: { duration: (config?.step3?.dur ?? 800) / 1000, ease: "easeIn" } },
+    step4: { x: config?.step4?.rX ?? -140, transition: { duration: (config?.step4?.dur ?? 800) / 1000, ease: "easeIn" } },
+    step5: { x: config?.step5?.rX ?? -100, transition: { duration: (config?.step5?.dur ?? 800) / 1000, ease: "easeInOut" } },
+    step6: { x: config?.step6?.rX ?? -50, transition: { duration: (config?.step6?.dur ?? 800) / 1000, ease: "easeInOut" } },
+    step7: { x: config?.step7?.rX ?? 0, transition: { duration: (config?.step7?.dur ?? 800) / 1000, ease: "easeInOut" } },
+    step8: { x: config?.step8?.rX ?? 100, transition: { duration: (config?.step8?.dur ?? 800) / 1000, ease: "easeOut" } }
   };
 
   const currentBlueLook = config?.[animationState]?.bLook ?? "forward";
@@ -297,19 +337,20 @@ export default function AnimationCanvas({
           {isLoading && (
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[60] bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md flex flex-col items-center justify-center"
+              className="absolute top-4 right-4 z-[60] bg-white/80 dark:bg-zinc-900/80 p-2 rounded-xl shadow-lg flex items-center gap-2"
             >
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 rounded-full border-4 border-zinc-200 dark:border-zinc-800"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
-              </div>
-              {/* <p className="mt-4 text-zinc-600 dark:text-zinc-300 font-medium animate-pulse">Applying AI adjustments...</p> */}
+              <Activity className="w-5 h-5 text-blue-500 animate-spin" />
+              <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">Gerando...</span>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="absolute inset-0 flex items-center justify-center">
-
+        {/* Dynamic Scale Container */}
+        <motion.div 
+          className="absolute inset-0 flex items-center justify-center"
+          animate={{ scale: !isLogsExpanded && !isFacialExpanded ? 1.4 : (!isLogsExpanded || !isFacialExpanded ? 1.2 : 1) }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        >
           {/* Blue Sheriff */}
           <motion.div
             variants={blueVariants}
@@ -326,7 +367,7 @@ export default function AnimationCanvas({
             </div>
 
             {/* Face */}
-            <div className={`absolute top-2 flex flex-col items-center z-20 transition-all duration-300 ${currentBlueLook === 'left' ? '-translate-x-3' : currentBlueLook === 'right' ? 'translate-x-3' : ''}`}>
+            <div className={`absolute top-2 flex flex-col items-center z-40 transition-all duration-300 ${currentBlueLook === 'left' ? '-translate-x-3' : currentBlueLook === 'right' ? 'translate-x-3' : ''}`}>
               <Face look={currentBlueLook} mood={currentBlueMood} isBandit={false} />
             </div>
 
@@ -360,7 +401,7 @@ export default function AnimationCanvas({
             </div>
 
             {/* Face embedded in Mask */}
-            <div className={`absolute top-3 flex flex-col items-center z-20 transition-all duration-300 ${currentRedLook === 'left' ? '-translate-x-3' : currentRedLook === 'right' ? 'translate-x-3' : ''}`}>
+            <div className={`absolute top-3 flex flex-col items-center z-40 transition-all duration-300 ${currentRedLook === 'left' ? '-translate-x-3' : currentRedLook === 'right' ? 'translate-x-3' : ''}`}>
               <div className="relative flex items-center justify-center bg-zinc-900 pt-1 pb-2.5 px-2 rounded-full shadow-md min-w-[3.5rem]">
                 <div className="mt-0.5">
                   <Face look={currentRedLook} mood={currentRedMood} isBandit={true} />
@@ -371,7 +412,7 @@ export default function AnimationCanvas({
             {/* Hand with Item */}
             {renderHand(currentRedItem, currentRedLook, 'bg-red-600')}
           </motion.div>
-        </div>
+        </motion.div>
 
         <div className="absolute bottom-0 left-0 w-full h-2 bg-zinc-200/50 dark:bg-zinc-800/50 z-40">
           <motion.div
@@ -390,12 +431,25 @@ export default function AnimationCanvas({
             {isPlaying ? <Square size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </button>
           <div className="hidden lg:block w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-          <button onClick={() => setIsAutoGenerate(!isAutoGenerate)} className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all flex-[2] lg:flex-none min-w-[180px] ${isAutoGenerate ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent"}`} title="Alternar Geração Automática">
+          <button onClick={() => {
+            const nextVal = !isAutoGenerate;
+            if (setIsAutoGenerate) {
+              setIsAutoGenerate(nextVal);
+            }
+            if (nextVal) {
+              if (onGenerateNewScene) {
+                onGenerateNewScene();
+              }
+              if (!isPlayingRef.current) {
+                runTimeline();
+              }
+            }
+          }} className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all flex-[2] lg:flex-none min-w-[180px] ${isAutoGenerate ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent"}`} title="Alternar Geração Automática">
             <Infinity size={18} className={isAutoGenerate ? "animate-pulse" : ""} />
             <span>Geração Automática</span>
           </button>
           <div className="hidden lg:block w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
-          <button onClick={() => {
+          {/* <button onClick={() => {
             if (onGenerateNewScene) {
               onGenerateNewScene();
             }
@@ -405,26 +459,12 @@ export default function AnimationCanvas({
           }} disabled={isLoading} className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 flex-[2] lg:flex-none min-w-[180px]`} title="Gerar Nova Cena">
             <Sparkles size={18} className={isLoading ? "animate-pulse" : ""} />
             <span>Gerar Nova Cena</span>
-          </button>
+          </button> */}
           <div className="hidden lg:block w-[1px] h-6 bg-zinc-300 dark:bg-zinc-700 mx-1"></div>
           <button onClick={() => setShowDebug(!showDebug)} className={`p-2.5 rounded-xl transition-colors flex-1 lg:flex-none flex justify-center ${showDebug ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`} title="Alternar Modo Diretor">
             <Settings2 size={20} />
           </button>
         </div>
-
-        {/* Auto Generate Progress Bar */}
-        <AnimatePresence>
-          {isAutoGenerate && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="w-full lg:w-[400px] overflow-hidden">
-              <div className="flex flex-col gap-1.5 items-center px-4 py-3 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm w-full">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Gerando automaticamente em {(timeRemaining / 1000).toFixed(1)}s</span>
-                <div className="h-1.5 w-full bg-zinc-100 dark:bg-zinc-800/50 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 transition-all duration-75" style={{ width: `${(timeRemaining / 15000) * 100}%` }} />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Debugging Mode Panel */}
@@ -437,8 +477,8 @@ export default function AnimationCanvas({
                 <h3>Modo Diretor (Configuração)</h3>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {['step1', 'step2', 'step3'].map((stepKey, idx) => {
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'].map((stepKey, idx) => {
                   const stepLabel = `Passo ${idx + 1}`;
                   const stepData = (config as any)?.[stepKey] || {};
 
