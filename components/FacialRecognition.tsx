@@ -164,10 +164,7 @@ export default function FacialRecognition({ onExpressionChange }: { onExpression
                 >
                   <span className="text-xl mb-1">{expressionEmojis[emo]}</span>
                   <span className="text-[9px] uppercase font-bold truncate w-full text-center">
-                    {emo === "shocked" ? "surpreso" :
-                      emo === "fearful" ? "medo" :
-                        emo === "disgusted" ? "nojo" :
-                          emo === "sad" ? "triste" : emo}
+                    {emo}
                   </span>
                 </button>
               ))}
