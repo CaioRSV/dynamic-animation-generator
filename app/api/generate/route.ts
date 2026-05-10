@@ -12,18 +12,37 @@ export async function POST(req: Request) {
     const lastReasoning = currentConfig.reasoning || "";
     currentConfig = body.currentConfig || {};
 
-    const systemPrompt = `Cena: Xerife interrogando suspeito ao ar livre (dia).
-JSON OBRIGATÓRIO: {"reasoning":"...","steps":[{"sheriffMood":"...","sheriffSpeech":"...","banditMood":"...","banditSpeech":"..."}]}
+    const systemPrompt = `Você é o roteirista de uma animação de comédia no Velho Oeste.
 
-REGRAS:
-1. Gere uma lista (array) de EXATAMENTE 8 passos no campo "steps".
-2. Moods: neutral, angry, shocked, sad.
-3. Speech: Diálogos de 1-5 palavras, sempre em português brasileiro.
-4. Alternância: Xerife fala nos passos ímpares (1,3,5,7), Bandido nos pares (2,4,6,8). Ouvinte usa "".
-5. Reaja à EMOÇÃO do usuário. Xerife autoritário, Bandido sarcástico.
-6. reasoning: máximo 10 palavras.
-`;
+PERFIS DOS PERSONAGENS (NUNCA SAIA DO PERSONAGEM):
+- XERIFE: Autoritário, desconfiado e focado na lei. Ele sempre acusa o Bandido, faz perguntas incisivas e tenta desmascará-lo.
+- BANDIDO: Sarcástico, dissimulado e cara-de-pau. Ele sempre nega os crimes usando as desculpas mais absurdas, cínicas e engraçadas possíveis. Finge inocência constantemente.
 
+O CONTEXTO: O Xerife sempre está investigando um crime absurdo e o Bandido é sempre o principal suspeito, pego em flagrante com provas questionáveis. O interrogatório nunca acaba.
+
+REGRAS RÍGIDAS DE FORMATAÇÃO (SIGA OU A ANIMAÇÃO VAI QUEBRAR):
+1. Responda APENAS com um JSON válido. Não inclua texto fora do JSON.
+2. O JSON deve ter o campo "reasoning" (resumo da cena e por que a emoção detectada a influenciou) e "steps" (lista com EXATAMENTE 8 itens).
+3. Humor ("sheriffMood" e "banditMood") SÓ PODE SER: "neutral", "happy", "angry", "shocked" ou "sad".
+4. Fala ("sheriffSpeech" e "banditSpeech"): devem ser frases naturais, conversacionais e curtas.
+5. ALTERNÂNCIA ESTRITA DE FALAS: 
+   - No passo 1, 3, 5, 7: O Xerife fala, e o Bandido DEVE ficar mudo ("").
+   - No passo 2, 4, 6, 8: O Bandido fala, e o Xerife DEVE ficar mudo ("").
+
+EXEMPLO DE SAÍDA JSON ESPERADA:
+{
+  "reasoning": "Como a emoção detectada foi 'shocked', o xerife foca em assustar o suspeito com a acusação do banco, e o bandido usa deboche fingindo choque.",
+  "steps": [
+    { "sheriffMood": "angry", "sheriffSpeech": "Parado! O que faz aqui?", "banditMood": "neutral", "banditSpeech": "" },
+    { "sheriffMood": "angry", "sheriffSpeech": "", "banditMood": "shocked", "banditSpeech": "Eu? Só comendo minha banana." },
+    { "sheriffMood": "angry", "sheriffSpeech": "Alguém roubou o banco hoje!", "banditMood": "shocked", "banditSpeech": "" },
+    { "sheriffMood": "angry", "sheriffSpeech": "", "banditMood": "neutral", "banditSpeech": "Que horror. Fui eu não." },
+    { "sheriffMood": "neutral", "sheriffSpeech": "Tem certeza? Achei esse dinheiro na sua bagagem.", "banditMood": "neutral", "banditSpeech": "" },
+    { "sheriffMood": "neutral", "sheriffSpeech": "", "banditMood": "happy", "banditSpeech": "Impossível! Eu só tenho o dinheiro da minha carteira." },
+    { "sheriffMood": "angry", "sheriffSpeech": "Alguém botou dinheiro na sua bolsa então, cidadão?", "banditMood": "happy", "banditSpeech": "" },
+    { "sheriffMood": "angry", "sheriffSpeech": "", "banditMood": "angry", "banditSpeech": "Só pode ter sido.." }
+  ]
+}`;
 
     const response = await fetch("http://127.0.0.1:11434/api/chat", {
       method: "POST",
@@ -36,15 +55,16 @@ REGRAS:
           { role: "system", content: systemPrompt },
           {
             role: "user", content: isAutoLoop
-              ? `ULTIMO ACONTECIMENTO: ${lastReasoning}
-DIÁLOGO RECENTE: ${history.join(' | ')}
-EMOÇÃO ATUAL DO USUÁRIO: ${emotion}
+              ? `CONTEXTO ANTERIOR (Não repita o diálogo, mas continue a partir dele): 
+${history.join(' | ')}
+RESUMO DA ÚLTIMA CENA: ${lastReasoning}
+EMOÇÃO DO ESPECTADOR AGORA: ${emotion}
 
-TAREFA: Continue a cena. Gere EXATAMENTE 8 PASSOS. Foque em novo diálogo, não repita o anterior. Output JSON.`
-              : `HISTÓRICO: ${history.join('\n')}
-ULTIMO ESTADO: ${JSON.stringify(currentConfig.step8 || currentConfig.step4 || {})}
-PEDIDO: ${prompt}
-TAREFA: Gere uma cena COMPLETA (step1 a step8) baseada no pedido. Output JSON.`
+TAREFA: Continue o interrogatório. Mantenha os papéis estritamente: O Xerife pressiona com novas acusações ou evidências, e o Bandido desvia com desculpas esfarrapadas. Faça uma referência criativa à EMOÇÃO DO ESPECTADOR. Responda APENAS com JSON!`
+              : `PEDIDO PARA A CENA: ${prompt}
+EMOÇÃO DO ESPECTADOR AGORA: ${emotion}
+
+TAREFA: Inicie a cena seguindo o PEDIDO. Mantenha os personagens em seus papéis (Xerife autoritário e desconfiado, Bandido cínico e sarcástico). Lembre-se da alternância de falas. Responda APENAS com JSON!`
           }
         ],
         stream: false,
@@ -101,7 +121,7 @@ TAREFA: Gere uma cena COMPLETA (step1 a step8) baseada no pedido. Output JSON.`
           if (bSpeechLower.includes("arma") || bSpeechLower.includes("pistola") || bSpeechLower.includes("parado")) bItem = "gun";
           if (bSpeechLower.includes("café") || bSpeechLower.includes("bebida")) bItem = "coffee";
           if (bSpeechLower.includes("dinheiro") || bSpeechLower.includes("grana") || bSpeechLower.includes("money")) bItem = "money";
-          
+
           // New tension logic: if both are angry, Sheriff draws his gun
           if (bMood === "angry" && rMood === "angry") {
             bItem = "gun";

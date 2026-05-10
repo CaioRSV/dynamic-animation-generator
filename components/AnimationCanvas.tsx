@@ -47,14 +47,30 @@ const CoffeeSvg = () => (
 // --- Speech Bubble Component ---
 const SpeechBubble = ({ text, isBandit }: { text: string, isBandit: boolean }) => {
   if (!text) return null;
+
+  // Sheriff: ABOVE. Bandit: BELOW. Guarantees no horizontal overlap.
+  const positionClass = isBandit 
+    ? 'top-[calc(100%+1rem)] sm:top-[calc(100%+1.5rem)] left-1/2 -translate-x-1/2' 
+    : 'bottom-[calc(100%+1rem)] sm:bottom-[calc(100%+1.5rem)] left-1/2 -translate-x-1/2';
+
+  // Sheriff's tail is below its bubble, pointing down.
+  // Bandit's tail is above its bubble, pointing up.
+  // We use calc(100% - 2px) to overlap the bubble border seamlessly.
+  const tailPositionClass = isBandit 
+    ? 'bottom-[calc(100%-2px)] left-1/2 -translate-x-1/2' 
+    : 'top-[calc(100%-2px)] left-1/2 -translate-x-1/2';
+
+  const tailFillPath = isBandit ? "M16 0 L32 32 L0 32 Z" : "M0 0 L32 0 L16 32 Z";
+  const tailStrokePath = isBandit ? "M0 32 L16 0 L32 32" : "M0 0 L16 32 L32 0";
+
   return (
-    <div className={`absolute -top-24 ${isBandit ? 'left-full ml-4' : 'right-full mr-4'} z-[200] bg-white/95 backdrop-blur-md text-zinc-900 px-6 py-4 rounded-[2.5rem] shadow-2xl border border-zinc-200/80 text-sm sm:text-lg font-black min-w-[200px] max-w-[350px] sm:max-w-[450px] leading-snug text-center flex items-center justify-center`}>
+    <div className={`absolute ${positionClass} z-[200] bg-white/95 backdrop-blur-md text-zinc-900 px-6 py-4 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-2xl border border-zinc-200/80 text-sm sm:text-lg font-black w-max max-w-[320px] md:max-w-[480px] leading-snug text-center flex items-center justify-center`}>
       {text}
-      {/* Slanted Triangular Tail pointing to characters */}
-      <div className={`absolute bottom-[-12px] ${isBandit ? 'left-4' : 'right-4'} w-8 h-8 pointer-events-none`}>
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d={isBandit ? "M24 0L0 24L8 0" : "M8 0L32 24L24 0"} fill="white" />
-          <path d={isBandit ? "M24 0L0 24L8 0" : "M8 0L32 24L24 0"} stroke="currentColor" strokeWidth="1" className="text-zinc-200/80" strokeLinejoin="round" />
+      {/* Slanted Triangular Tail */}
+      <div className={`absolute ${tailPositionClass} w-6 h-6 sm:w-8 sm:h-8 pointer-events-none`}>
+        <svg width="100%" height="100%" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <path d={tailFillPath} fill="white" />
+          <path d={tailStrokePath} stroke="currentColor" strokeWidth="1" className="text-zinc-200/80" strokeLinejoin="round" />
         </svg>
       </div>
     </div>
@@ -145,6 +161,24 @@ export default function AnimationCanvas({
   const [animationState, setAnimationState] = useState<"step1" | "step2" | "step3" | "step4" | "step5" | "step6" | "step7" | "step8">("step1");
   const [progress, setProgress] = useState(0);
   const [showDebug, setShowDebug] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [baseScale, setBaseScale] = useState(1);
+
+  useEffect(() => {
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        const width = entries[0].contentRect.width;
+        // Assume 900px is a good reference width for scale = 1.
+        // Scale down proportionally if the canvas is smaller to ensure visibility.
+        setBaseScale(Math.min(1, width / 900));
+      }
+    });
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   const isAutoGenerateRef = useRef(isAutoGenerate);
   useEffect(() => { isAutoGenerateRef.current = isAutoGenerate; }, [isAutoGenerate]);
@@ -327,7 +361,7 @@ export default function AnimationCanvas({
         </h1>
       </div>
 
-      <div className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-2xl shadow-zinc-200/20 dark:shadow-black/50 group">
+      <div ref={containerRef} className="relative w-full aspect-[4/3] sm:aspect-video lg:aspect-[21/9] rounded-3xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/50 bg-white/40 dark:bg-zinc-950/40 backdrop-blur-3xl shadow-2xl shadow-zinc-200/20 dark:shadow-black/50 group">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
 
         {/* Floor Line */}
@@ -348,7 +382,7 @@ export default function AnimationCanvas({
         {/* Dynamic Scale Container */}
         <motion.div 
           className="absolute inset-0 flex items-center justify-center"
-          animate={{ scale: !isLogsExpanded && !isFacialExpanded ? 1.4 : (!isLogsExpanded || !isFacialExpanded ? 1.2 : 1) }}
+          animate={{ scale: baseScale * (!isLogsExpanded && !isFacialExpanded ? 1.4 : (!isLogsExpanded || !isFacialExpanded ? 1.2 : 1)) }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
         >
           {/* Blue Sheriff */}

@@ -18,14 +18,14 @@ export default function Home() {
   const [isFacialExpanded, setIsFacialExpanded] = useState(true);
 
   const defaultSeq1 = {
-    step1: { dur: 2500, bX: -160, bLook: 'right', bMood: 'angry', bItem: 'none', bSpeech: 'Quem está aí?', rX: 160, rLook: 'left', rMood: 'shocked', rItem: 'none', rSpeech: '...' },
-    step2: { dur: 3000, bX: -100, bLook: 'right', bMood: 'angry', bItem: 'none', bSpeech: 'Apareça devagar.', rX: 100, rLook: 'left', rMood: 'neutral', rItem: 'banana', rSpeech: 'Calma aí, Xerife.' },
-    step3: { dur: 2500, bX: -100, bLook: 'right', bMood: 'angry', bItem: 'gun', bSpeech: 'Não se mova.', rX: 100, rLook: 'left', rMood: 'happy', rItem: 'banana', rSpeech: 'Eu não fiz nada.' },
-    step4: { dur: 2500, bX: -100, bLook: 'right', bMood: 'angry', bItem: 'gun', bSpeech: 'Mãos pro alto.', rX: 100, rLook: 'left', rMood: 'shocked', rItem: 'none', rSpeech: 'Ok, ok!' },
-    step5: { dur: 2500, bX: -80, bLook: 'right', bMood: 'neutral', bItem: 'gun', bSpeech: 'Identifique-se.', rX: 80, rLook: 'left', rMood: 'neutral', rItem: 'none', rSpeech: 'Sou da paz.' },
-    step6: { dur: 3000, bX: -80, bLook: 'right', bMood: 'neutral', bItem: 'gun', bSpeech: 'Com essa banana?', rX: 80, rLook: 'left', rMood: 'happy', rItem: 'banana', rSpeech: 'É pro lanche.' },
-    step7: { dur: 2500, bX: -80, bLook: 'right', bMood: 'happy', bItem: 'none', bSpeech: 'Tudo bem então.', rX: 80, rLook: 'left', rMood: 'happy', rItem: 'banana', rSpeech: 'Quer um pedaço?' },
-    step8: { dur: 2500, bX: -150, bLook: 'right', bMood: 'neutral', bItem: 'none', bSpeech: 'Não, valeu.', rX: 150, rLook: 'left', rMood: 'neutral', rItem: 'none', rSpeech: 'Beleza.' }
+    step1: { dur: 2500, bX: -120, bLook: 'right', bMood: 'angry', bItem: 'none', bSpeech: 'Parado! O que faz aqui?', rX: 120, rLook: 'left', rMood: 'neutral', rItem: 'none', rSpeech: '' },
+    step2: { dur: 3000, bX: -120, bLook: 'right', bMood: 'angry', bItem: 'none', bSpeech: '', rX: 120, rLook: 'left', rMood: 'shocked', rItem: 'banana', rSpeech: 'Eu? Só comendo minha banana.' },
+    step3: { dur: 3000, bX: -120, bLook: 'right', bMood: 'angry', bItem: 'none', bSpeech: 'Alguém roubou o banco hoje!', rX: 120, rLook: 'left', rMood: 'shocked', rItem: 'banana', rSpeech: '' },
+    step4: { dur: 2500, bX: -120, bLook: 'right', bMood: 'angry', bItem: 'bomb', bSpeech: '', rX: 120, rLook: 'left', rMood: 'neutral', rItem: 'banana', rSpeech: 'Que horror. Fui eu não.' },
+    step5: { dur: 3000, bX: -120, bLook: 'right', bMood: 'neutral', bItem: 'money', bSpeech: 'Tem certeza? Achei esse dinheiro na sua bagagem.', rX: 120, rLook: 'left', rMood: 'neutral', rItem: 'banana', rSpeech: '' },
+    step6: { dur: 3000, bX: -120, bLook: 'right', bMood: 'neutral', bItem: 'money', bSpeech: '', rX: 120, rLook: 'left', rMood: 'happy', rItem: 'none', rSpeech: 'Impossível! Eu só tenho o dinheiro da minha carteira.' },
+    step7: { dur: 2500, bX: -120, bLook: 'right', bMood: 'angry', bItem: 'gun', bSpeech: 'Alguém botou dinheiro na sua bolsa então, cidadão?', rX: 120, rLook: 'left', rMood: 'happy', rItem: 'none', rSpeech: '' },
+    step8: { dur: 3000, bX: -120, bLook: 'right', bMood: 'angry', bItem: 'none', bSpeech: '', rX: 120, rLook: 'left', rMood: 'angry', rItem: 'none', rSpeech: 'Só pode ter sido..' }
   };
 
   const [sequenceQueue, setSequenceQueue] = useState<any[]>([defaultSeq1]);
@@ -137,7 +137,7 @@ export default function Home() {
     <div className="h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-black font-sans flex flex-col lg:flex-row p-4 sm:p-6 gap-4 max-w-[2500px] mx-auto items-stretch">
       {/* Left side: Logs */}
       <div className="relative flex h-[40vh] lg:h-full shrink-0">
-        <motion.div 
+        <motion.div
           animate={{ width: isLogsExpanded ? (typeof window !== 'undefined' && window.innerWidth > 1024 ? 320 : "100%") : 0, opacity: isLogsExpanded ? 1 : 0 }}
           className="overflow-hidden h-full"
         >
@@ -145,7 +145,7 @@ export default function Home() {
             <LogInterface isLoading={isGenerating} logs={logs} />
           </div>
         </motion.div>
-        <button 
+        <button
           onClick={() => setIsLogsExpanded(!isLogsExpanded)}
           className="absolute -right-4 top-1/2 -translate-y-1/2 z-50 p-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full shadow-md text-zinc-500 hover:text-blue-500 transition-colors hidden lg:block"
         >
@@ -155,10 +155,10 @@ export default function Home() {
 
       {/* Middle: Canvas & Controls */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto pr-2">
-        <AnimationCanvas 
-          config={config} 
-          setConfig={setConfig} 
-          isLoading={isGenerating} 
+        <AnimationCanvas
+          config={config}
+          setConfig={setConfig}
+          isLoading={isGenerating}
           isAutoGenerate={isAutoGenerate}
           setIsAutoGenerate={setIsAutoGenerate}
           onSequenceComplete={handleSequenceComplete}
@@ -169,13 +169,13 @@ export default function Home() {
 
       {/* Right side: Facial Recognition */}
       <div className="relative flex h-auto lg:h-full shrink-0">
-        <button 
+        <button
           onClick={() => setIsFacialExpanded(!isFacialExpanded)}
           className="absolute -left-4 top-1/2 -translate-y-1/2 z-50 p-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full shadow-md text-zinc-500 hover:text-blue-500 transition-colors hidden lg:block"
         >
           {isFacialExpanded ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
-        <motion.div 
+        <motion.div
           animate={{ width: isFacialExpanded ? (typeof window !== 'undefined' && window.innerWidth > 1024 ? 320 : "100%") : 0, opacity: isFacialExpanded ? 1 : 0 }}
           className="overflow-hidden h-full"
         >
