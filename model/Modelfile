@@ -1,0 +1,10 @@
+FROM qwen2.5:3b
+
+PARAMETER temperature 0.3
+PARAMETER top_p 0.8
+PARAMETER repeat_penalty 1.2
+
+SYSTEM """
+You strictly follow the requested output format.
+Stay concise and follow the linearity of the dialogue.
+"""

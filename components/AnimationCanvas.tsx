@@ -49,15 +49,15 @@ const SpeechBubble = ({ text, isBandit }: { text: string, isBandit: boolean }) =
   if (!text) return null;
 
   // Sheriff: ABOVE. Bandit: BELOW. Guarantees no horizontal overlap.
-  const positionClass = isBandit 
-    ? 'top-[calc(100%+1rem)] sm:top-[calc(100%+1.5rem)] left-1/2 -translate-x-1/2' 
+  const positionClass = isBandit
+    ? 'top-[calc(100%+1rem)] sm:top-[calc(100%+1.5rem)] left-1/2 -translate-x-1/2'
     : 'bottom-[calc(100%+1rem)] sm:bottom-[calc(100%+1.5rem)] left-1/2 -translate-x-1/2';
 
   // Sheriff's tail is below its bubble, pointing down.
   // Bandit's tail is above its bubble, pointing up.
   // We use calc(100% - 2px) to overlap the bubble border seamlessly.
-  const tailPositionClass = isBandit 
-    ? 'bottom-[calc(100%-2px)] left-1/2 -translate-x-1/2' 
+  const tailPositionClass = isBandit
+    ? 'bottom-[calc(100%-2px)] left-1/2 -translate-x-1/2'
     : 'top-[calc(100%-2px)] left-1/2 -translate-x-1/2';
 
   const tailFillPath = isBandit ? "M16 0 L32 32 L0 32 Z" : "M0 0 L32 0 L16 32 Z";
@@ -357,7 +357,7 @@ export default function AnimationCanvas({
           <Activity size={24} />
         </div>
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-red-500">
-          Dynamic Content Generator
+          Dynamic Animation Generator
         </h1>
       </div>
 
@@ -380,7 +380,7 @@ export default function AnimationCanvas({
         </AnimatePresence>
 
         {/* Dynamic Scale Container */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 flex items-center justify-center"
           animate={{ scale: baseScale * (!isLogsExpanded && !isFacialExpanded ? 1.4 : (!isLogsExpanded || !isFacialExpanded ? 1.2 : 1)) }}
           transition={{ type: "spring", stiffness: 100, damping: 20 }}

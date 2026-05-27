@@ -50,7 +50,7 @@ EXEMPLO DE SAÍDA JSON ESPERADA:
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "qwen2.5:3b",
+        model: "dynamic-content-model",
         messages: [
           { role: "system", content: systemPrompt },
           {
