@@ -2,6 +2,10 @@
 
 **Tech Demo — Protótipo de Gerador de Animação dinâmico com direção por emoção facial**
 
+<div align="center">
+  <video src="./public/demo/demo.mp4" width="100%" controls autoplay loop muted></video>
+</div>
+
 ---
 
 ## Contexto
