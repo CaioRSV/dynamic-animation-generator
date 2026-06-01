@@ -2,12 +2,6 @@
 
 **Tech Demo — Protótipo de Gerador de Animação dinâmico com direção por emoção facial**
 
-<div align="center">
-  <a href="https://youtu.be/mWRbQPRfHB0">
-    <img src="https://img.youtube.com/vi/mWRbQPRfHB0/maxresdefault.jpg" alt="Demo Video" width="100%" />
-  </a>
-</div>
-
 ---
 
 ## Contexto
